@@ -39,10 +39,12 @@ else
     echo "[+] Created User: $user (uid=$uid gid=$gid)"
 fi
 
-# populate /usr/local
-echo "[+] Creating and setting permissions on directories in /usr/local"
-dirs=(bin Caskroom Cellar etc Frameworks Homebrew include lib opt sbin share var)
-cd /usr/local
+
+
+# populate /opt/homebrew
+echo "[+] Creating and setting permissions on directories in /opt"
+dirs=(bin homebrew)
+cd /opt
 for dir in "${dirs[@]}"; do
     mkdir -p "$dir"
     chown brew:staff "$dir"
@@ -51,13 +53,12 @@ done
 
 # install homebrew
 echo "[+] Installing homebrew to /usr/local/Cellar"
-curl -L https://github.com/Homebrew/brew/tarball/master | tar xz --strip 1 -C Homebrew
-ln -fs ../Homebrew/bin/brew bin/brew
-chown -R "$user":"$gid" Homebrew bin/brew
+curl -L https://github.com/Homebrew/brew/tarball/master | tar xz --strip 1 -C homebrew
+ln -fs ../homebrew/bin/brew bin/brew
+chown -R "$user":"$gid" homebrew bin/brew
 
 # set up sudobrew
 echo "[+] Creating /opt/sudobrew"
-mkdir -p /opt
 if [[ -e /opt/sudobrew ]]; then
     chflags noschg /opt/sudobrew
     rm -f /opt/sudobrew
@@ -67,7 +68,7 @@ cd /
 export EDITOR=vim
 export HOME=/tmp
 export HOMEBREW_NO_ANALYTICS=1
-exec sudo -E -u brew /usr/local/bin/brew "$@"
+exec sudo -E -u brew /opt/homebrew/bin/brew "$@"
 ' > /opt/sudobrew
 chown root:staff /opt/sudobrew
 chmod 555 /opt/sudobrew
@@ -87,18 +88,18 @@ cd /
 rm -rf "$tmpdir"
 
 # set up .bash_profile
-echo "[+] Update .bash_profile"
+echo "[+] Update .zshrc"
 cd "$HOME"
-if [[ -e .bash_profile ]]; then
-    sed -i.bak -e '/brew() {/d' .bash_profile
-    remove_trailing_lines .bash_profile
-    echo >> .bash_profile
+if [[ -e .zshrc ]]; then
+    sed -i.bak -e '/brew() {/d' .zshrc
+    remove_trailing_lines .zshrc
+    echo >> .zshrc
 else
-    touch .bash_profile
-    chown "$SUDO_UID:$SUDO_GID" .bash_profile
+    touch .zshrc
+    chown "$SUDO_UID:$SUDO_GID" .zshrc
 fi
-echo 'brew() { sudo /opt/sudobrew "$@"; }' >> .bash_profile
-rm -f .bash_profile.bak
+echo 'brew() { sudo /opt/sudobrew "$@"; }' >> .zshrc
+rm -f .zshrc.bak
 
 # xcode-select --install
 # xcodebuild -license accept
